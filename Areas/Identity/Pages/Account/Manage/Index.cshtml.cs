@@ -7,6 +7,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using CustomerUserManagement.Models;
+using Microsoft.AspNetCore.Http;
+using System.IO;
+
 namespace CustomerUserManagement.Areas.Identity.Pages.Account.Manage
 {
     public partial class IndexModel : PageModel
@@ -26,12 +29,16 @@ namespace CustomerUserManagement.Areas.Identity.Pages.Account.Manage
 
         [TempData]
         public string StatusMessage { get; set; }
-
+        [TempData]
+        public string UserNameChangeLimitMessage { get; set; }
         [BindProperty]
         public InputModel Input { get; set; }
 
         public class InputModel
         {
+            
+            public InputModel Input { get; set; }
+
             [Display(Name = "First Name")]
             public string FirstName { get; set; }
             [Display(Name = "Last Name")]
@@ -100,6 +107,17 @@ namespace CustomerUserManagement.Areas.Identity.Pages.Account.Manage
             if (Input.LastName != lastName)
             {
                 user.LastName = Input.LastName;
+                await _userManager.UpdateAsync(user);
+            }
+
+            if (Request.Form.Files.Count > 0)
+            {
+                IFormFile file = Request.Form.Files.FirstOrDefault();
+                using (var dataStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(dataStream);
+                    user.ProfilePicture = dataStream.ToArray();
+                }
                 await _userManager.UpdateAsync(user);
             }
             var phoneNumber = await _userManager.GetPhoneNumberAsync(user);
